@@ -55,7 +55,7 @@ __global__ void KernelAdd(int num_items, float* x, float* y, float* result) {
     //   битный на видеокартах, т.к. ядра целых чисел
     //   созданы для 32-ух битных целых чисел.
     // Поправьте, пожалуйста, если не прав.
-    int thread_index = block_index * num_blocks + thread_index_in_block;
+    int thread_index = block_index * num_threads_per_block + thread_index_in_block;
     int num_threads  = num_blocks * num_threads_per_block;
 
     // We now can use printfs from device

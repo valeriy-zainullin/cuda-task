@@ -19,7 +19,7 @@ __global__ void KernelMul(int num_items, float* x, float* y, float* result) {
     uint3 block_index_3d = blockIdx;
     int block_index = block_index_3d.x; // В 0-индексации.
 
-    int thread_index = block_index * num_blocks + thread_index_in_block;
+    int thread_index = block_index * num_threads_per_block + thread_index_in_block;
     int num_threads  = num_blocks * num_threads_per_block;
 
     for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
