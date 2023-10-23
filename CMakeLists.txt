@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(CudaTasks LANGUAGES CUDA CXX)
 
+set(CMAKE_CXX_STANDARD 17) # std::is_trivially_copyable_v
+
 include_directories(include)
 
 string(APPEND CMAKE_CUDA_FLAGS " -gencode arch=compute_61,code=sm_61 -gencode arch=compute_75,code=sm_75")
