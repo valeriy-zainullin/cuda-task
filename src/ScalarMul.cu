@@ -26,7 +26,7 @@ void ScalarMulBlock(int num_items, float* vector1, float* vector2, float *result
     float item_sum = 0;
 
     for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
-        item_sum += x[item_index] * y[item_index];
+        item_sum += vector1[item_index] * vector2[item_index];
     }
 
     result[thread_index] = item_sum;
