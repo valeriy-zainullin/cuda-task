@@ -1,6 +1,6 @@
 #include <KernelMul.cuh>
 
-__global__ void KernelMul(int numElements, float* x, float* y, float* result) {
+__global__ void KernelMul(int num_items, float* x, float* y, float* result) {
     // Аналогично KernelAdd.
 
     uint3 thread_index_3d = threadIdx;
