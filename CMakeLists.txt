@@ -30,12 +30,12 @@ target_link_libraries(08-filter common_kernels)
 
 set(PLOT_TARGETS "")
 function(plot_target cuda_target)
-	add_custom_target(${cuda_target}
+	add_custom_target(plot_${cuda_target}
 		COMMAND bash -c "'${CMAKE_OUTPUT_DIR}/${cuda_target}' > ${CMAKE_OUTPUT_DIR}/${cuda_target}_output.txt"
 		COMMAND python3 "${CMAKE_CURRENT_LIST_DIR}/plot.py" ${CMAKE_OUTPUT_DIR}/${cuda_target}_output.txt plots/${cuda_target}.png
 		DEPENDS ${cuda_target}
 	)
-	set(PLOT_TARGETS "${PLOT_TARGETS} ${cuda_target}")
+	set(PLOT_TARGETS PARENT "${PLOT_TARGETS};plot_${cuda_target}")
 endfunction()
 
 plot_target(01-add)
