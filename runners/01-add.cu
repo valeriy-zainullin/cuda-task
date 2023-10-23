@@ -97,6 +97,12 @@ int main() {
     //   block are executed on the same stream processor (stream
     //   processor is a set of cores, gpu consists of stream
     //   processors).
+    // If we pass ints, it creates uint3 gridDim, uint3 blockDim
+    //   with x equal to our values and y, z equal to 1.
+    // If we pass uint3 as gridDim and blockDim,
+    //   it'll create gridDim.x * gridDim.y * gridDim.z blocks,
+    //   each block will have blockDim.x * blickDim.y * blockDim.z
+    //   threads.
     KernelAdd<<<num_blocks, num_threads_per_block>>>(static_cast<int>(num_items), dev_items1, dev_items2, dev_result);
 
     cudaError_t status = cudaMemcpy(result, dev_result, sizeof(result), cudaMemcpyDeviceToHost);
