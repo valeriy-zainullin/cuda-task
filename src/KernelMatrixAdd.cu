@@ -25,6 +25,22 @@ __global__ void KernelMatrixAdd(int height, int width, int pitch, float* A, floa
     int thread_index_x = blockDim.x * blockIdx.x + threadIdx.x;
     int thread_index_y = blockDim.y * blockIdx.y + threadIdx.y;
 
+    // Можно выделить pitched-матрицу. Каждая её строка
+    //   будет выровнена на машинное слово, чтобы ускорить
+    //   к ней доступ. Это можно сделать с помощью функции
+    //   cudaMallocPitch.
+    // Ссылка: https://stackoverflow.com/a/16119944
+    // Не только ускорение из-за выравнивания, но и из-за
+    //   избавления от bank-conflicts. Новые строки будут
+    //   в разных банках памяти, потому параллельный
+    //   доступ к ним будет быстрее, если в кратце.
+    // В нашем случае почему-то pitch передается в
+    //   единицах sizeof(float), а не в байтах. Я думаю,
+    //   это сделано ради ускорения работы.
+    if (pitch > width) {
+        width = pitch;
+    }
+
     for (int row = thread_index_y; row < height; row += num_threads_y) {
         for (int col = thread_index_x; col < width; col += num_threads_x) {
             int item_index = row * width + col; // Seems like we have an 1D array with matrices.
