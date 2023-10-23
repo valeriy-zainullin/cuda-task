@@ -1,5 +1,48 @@
 #include "KernelAdd.cuh"
 
-__global__ void KernelAdd(int numElements, float* x, float* y, float* result) {
+#include <cstdint>
 
+__global__ void KernelAdd(int num_items, float* x, float* y, float* result) {
+    // Yandex search of "cuda examples with commentary":
+      //   simple example, base of my solution for now
+      //   https://gist.github.com/dpiponi/1502434,
+      //   book that may contain useful information
+      //   https://hpc.pku.edu.cn/docs/20170830181942363132.pdf
+
+    // До сих пор не понимаю, зачем такой фиктивный
+    //   трехмерный вектор для индекса, ведь это же
+    //   не топология видеокарты? Это чтобы было проще
+    //   при перемножении матриц? Потому что обычно имеем
+    //   дело с трехмерным пространством? Если из-за
+    //   трехмерности пространства, то в каких примерах
+    //   это полезно?
+    uint3 thread_index_3d = threadIdx;
+
+    // Элементов может быть больше, чем максимальное
+    //   количество потоков (1024). Потому сделаем так,
+    //   что один поток будет отвечать за несколько
+    //   элементов, за элементы, у которых остаток от
+    //   деления индекса на количество потоков совпадает
+    //   с номером потока.
+    // Поправляйте, пожалуйста, если что не так.
+    //   Информация поступает очень противоречивая.
+    //   У нас есть максимальные размерности координат
+    //   индекса потока, количество потоков не более
+    //   1024, есть gridSize, пока не понимаю, что это.
+    //   Это распределение типов ядер в самой видеокарте?
+    uint3 block_dim_3d = blockDim;
+
+    // Количество элементов помещается в int,
+    //   потому и индекс поместится. А потоков вообще
+    //   не слишком много может быть, количество даже
+    //   в int16_t поместилось бы. А у нас int 32-ух
+    //   битный на видеокартах, т.к. ядра целых чисел
+    //   созданы для 32-ух битных целых чисел.
+    // Поправьте, пожалуйста, если не прав.
+    int thread_index = thread_index_3d.x;
+    int num_threads  = block_dim_3d.x;
+
+    for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
+        result[item_index] = x[item_index] + y[item_index];
+    }
 }
