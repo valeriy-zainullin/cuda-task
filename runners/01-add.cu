@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <type_traits>
 
 template <typename T>
 static T* alloc_copy_from_host(T* src, size_t src_len) {
