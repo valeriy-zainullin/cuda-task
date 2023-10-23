@@ -1,4 +1,4 @@
-#include "KernelAdd.cuh"
+#include <KernelAdd.cuh>
 
 #include <cstdio>
 #include <cstdint>
@@ -63,7 +63,7 @@ __global__ void KernelAdd(int num_items, float* x, float* y, float* result) {
     // printf("num_blocks = %d, block_index = %d, thread_index = %d, num_threads = %d.\n", gridDim.x, blockIdx.x, thread_index, num_threads);
 
     for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
-        printf("thread_index = %d, item_index = %d, x[item_index] = %.4f, y[item_index] = %.4f.\n", thread_index, item_index, x[item_index], y[item_index]);
+        // printf("thread_index = %d, item_index = %d, x[item_index] = %.4f, y[item_index] = %.4f.\n", thread_index, item_index, x[item_index], y[item_index]);
         result[item_index] = x[item_index] + y[item_index];
     }
 }
