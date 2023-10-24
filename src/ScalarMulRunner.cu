@@ -4,7 +4,11 @@
 #include <OnExit.h>
 #include <ScalarMul.cuh>
 
+#include <algorithm>
+#include <cassert>
 #include <iostream>
+#include <iomanip>
+#include <type_traits>
 
 
 float ScalarMulTwoReductions(int num_items, float* vector1, float* vector2, int block_size) {
@@ -56,6 +60,26 @@ static T* alloc_memset(int byte, size_t num_bytes) {
     return reinterpret_cast<T*>(dst);
 }
 
+static int get_next_pow2(int value) {
+    assert(value >= 0);
+
+    if (value & (value + 1) == 0) {
+        // Уже степень двойки.
+        return value;
+    }
+
+    static const int MAX_POW = 30;
+    for (int i = 0; i < MAX_POW; ++i) {
+        int candidate = 1 << i;
+        if (candidate >= value) {
+            return candidate;
+        }
+    }
+
+    assert(false); // Не должно происходить, дали слишком большое число.
+    return 0;
+}
+
 float ScalarMulSumPlusReduction(int num_items, float* vector1, float* vector2, int block_size) {
     float* dev_vector1 = alloc_copy_from_host(vector1, num_items);
     if (dev_vector1 == nullptr) {
@@ -75,7 +99,9 @@ float ScalarMulSumPlusReduction(int num_items, float* vector1, float* vector2, i
         cudaFree(dev_vector2);
     });
 
-    float* dev_result = alloc_memset<float>(0, num_items * sizeof(float));
+    int result_len = get_next_pow2(num_items);
+
+    float* dev_result = alloc_memset<float>(0, result_len * sizeof(float));
     if (dev_result == nullptr) {
         std::cerr << "Failed to create result array on the device.\n";
         return 0.0f;
@@ -86,7 +112,7 @@ float ScalarMulSumPlusReduction(int num_items, float* vector1, float* vector2, i
 
     ScalarMulBlock<<<1, block_size>>>(num_items, dev_vector1, dev_vector2, dev_result);
 
-    DevDoScan1<<<1, block_size>>>(dev_result, num_items);
+    DevDoScan1<<<1, block_size>>>(dev_result, result_len);
 
     float sum = 0;
     cudaError_t status = cudaMemcpy(&sum, dev_result, sizeof(float), cudaMemcpyDeviceToHost);

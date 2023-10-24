@@ -30,20 +30,21 @@ void DevDoScan1(float *array, int array_size) {
     int thread_index = threadIdx.x;
 
     // Первый этап уже готов, переходим ко второму. Завершаемся
-    //   тогда, когда очередной этап будет содержать элементов
-    //   больше, чем надо.
-    for (int step = 1; (1 << step) < array_size; ++step) {
+    //   тогда, когда на очередном этапе первый элемент будет
+    //   содержать элементов больше, чем надо.
+    for (int step = 1; (1 << step) <= array_size; ++step) {
         // Нужно дополнить информацию в каждом 2^step-вом элементе.
         //   Там уже есть сумма, надо добавить сумму из предыдущего.
         // Всего элементов требуется рассмотреть array_size / (1 << step).
         //   Каждый поток рассматривает элементы, номера которых при
         //   делении на количество потоков имеют остаток равный номеру потока.
         int item_array_pos = thread_index * (1 << step);
-        for (int item = threadIdx.x; item < array_size / (1 << step); item += num_threads) {
+        for (int item = thread_index; item < array_size / (1 << step); item += num_threads) {
             int prev_step_shift = (1 << step) / 2;
             // Предыдущий на прошлом этапе содержал недостающую сумму. На этом этапе
             //   его не затронут, поскольку его номер не делится на шаг.
-            array[item] += array[item_array_pos + prev_step_shift];
+            array[item_array_pos] += array[item_array_pos + prev_step_shift];
+            // printf("array[%d] = %.0f, array[%d] = %.0f, array[%d] += array[%d].\n", item_array_pos, item_array_pos, )
             item_array_pos += num_threads * (1 << step);
         }
         // Дожидаемся, пока все потоки завершат этап.
