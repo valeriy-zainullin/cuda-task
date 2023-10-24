@@ -8,10 +8,16 @@ void MatrixVectorMul(int height, int width, float* matrix, float* vector, float*
     // (t_x, t_y, t_z) <-> t_x + t_y * s_x + t_z * s_y * s_z.
     //  Это биекция, т.к. можно восстановить результаты
     //  делением с остатком.
-    int thread_index =
+    int thread_index_in_block =
         threadIdx.x +
-        blockIdx.x * threadIdx.y +
-        blockIdx.x * blockIdx.y * threadIdx.z;
+        blockDim.x * threadIdx.y +
+        blockDim.x * blockDim.y * threadIdx.z;
+    int block_index =
+        blockIdx.x +
+        gridDim.x * blockIdx.y +
+        gridDim.x * gridDim.y * blockIdx.z;
+    int threads_in_block = blockDim.x * blockDim.y * blockDim.z;
+    int thread_index = thread_index_in_block + block_index * threads_in_block;
 
     if (thread_index >= height) {
         return;
