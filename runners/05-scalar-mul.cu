@@ -161,5 +161,23 @@ int main() {
     }
     std::cout << "]\n";
 
+    DevDoScan2<<<num_blocks, num_threads_per_block>>>(dev_result, num_items);
+
+    status = cudaMemcpy(result, dev_result, sizeof(result), cudaMemcpyDeviceToHost);
+    if (status != cudaSuccess) {
+        std::cerr << "Failed to copy scan result array to the host.\n";
+        return 5;
+    }
+
+    std::cout << "scan2 = [";
+    for (size_t i = 0; i < num_items; ++i) {
+        std::cout << std::fixed << std::setw(1);
+        if (i != 0) {
+            std::cout << ", ";
+        }
+        std::cout << result[i];
+    }
+    std::cout << "]\n";
+
     return 0;
 }

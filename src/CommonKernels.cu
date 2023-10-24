@@ -1,5 +1,7 @@
 #include <CommonKernels.cuh>
 
+#include <cstdio>
+
 // Реализация алгоритма Scan.
 //   Лекция: https://www.youtube.com/watch?v=jbmYuX_bxJY&list=PLfibPMPn-PgyfrdrfmxvEAXtcjw7yfZmL&index=4
 // Ещё это было на семинарах Романа (не знаю отчество, написал бы) Пономаренко, reduce.
@@ -65,4 +67,55 @@ void DevDoScan1(float *array, int array_size) {
     //   blockDim.y == blockDim.z == 1, т.к. сути это
     //   не меняет. Да и векторы размерности более
     //__syncthreads();
+}
+
+// Вторая глава, где мы из сумм на отрезках длины 2^k получаем
+//   префиксные суммы (видимо, суффиксные суммы, т.к. у нас
+//   суммы отрезков хранятся в первых элементах, а не в последних,
+//   для тех отрезков, для которых хранятся).
+__global__
+void DevDoScan2(float *array, int array_size) {
+    // Здесь нам тоже нужно действовать по шагам.
+    //   Изначально рассматриваются элементы предпоследнего шага.
+    //   Затем рассматриваются элементы второго с конца и так далее.
+    //   Для каждой пары соседних элементов мы тот, который позже,
+    //   поставим вместо того, который раньше, а на месте элемента,
+    //   позиция которого больше, поставим сумму.
+    // Осталось показать, что это работает. Думаю, опишем при
+    //   реализации.
+
+    int num_threads = blockDim.x;
+    int thread_index = threadIdx.x;
+
+    // Картинка: https://youtu.be/jbmYuX_bxJY?si=PSk5zMdUffRKkNbo&t=1897
+
+    array[0] = 0.0f;
+    // Согласно картинке, для каждого элемента текущего шага смотрим,
+    //   из каких двух он получался. В меньший по индексу записываем
+    //   наше значение, а в больший записываем сумму меньшего и
+    //   текущего значения. У нас всё наоборот, в меньший пишем сумму.
+    for (int step_size = array_size; step_size >= 2; step_size /= 2) {
+        int item_array_pos = thread_index * step_size;
+        for (int item = thread_index; item < array_size / step_size; item += num_threads) {
+            int prev_step_shift = step_size / 2;
+            int prev_left = item_array_pos;
+            int prev_right = item_array_pos + prev_step_shift;
+
+            int new_left_part  = array[prev_left] + array[prev_right];
+            int new_right_part = array[prev_left];
+
+            array[prev_left] = new_left_part;
+            array[prev_right] = new_right_part;
+
+            // printf("array[%d] = %.0f, array[%d] = %.0f.\n", prev_left, array[prev_left], prev_right, array[prev_right]);
+            item_array_pos += num_threads * step_size;
+        }
+        // Дожидаемся, пока все потоки завершат этап.
+        //   Без этого нельзя продолжать дальше, т.к.
+        //   информация для следующего этапа зависит от других потоков.
+        //   Больше информации написал ниже.
+        __syncthreads();
+    }
+
+    // В итоге, у нас получается развернутая префиксная сумма. Суффиксная сумма.
 }
