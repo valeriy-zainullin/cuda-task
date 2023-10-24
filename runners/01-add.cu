@@ -1,6 +1,6 @@
-#include "KernelAdd.cuh"
+#include <KernelAdd.cuh>
 
-#include "OnExit.h"
+#include <OnExit.h>
 
 #include <algorithm>
 #include <iostream>
