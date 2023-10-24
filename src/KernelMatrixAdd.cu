@@ -44,7 +44,7 @@ __global__ void KernelMatrixAdd(int height, int width, int pitch, float* A, floa
     for (int row = thread_index_y; row < height; row += num_threads_y) {
         for (int col = thread_index_x; col < width; col += num_threads_x) {
             int item_index = row * width + col; // Seems like we have an 1D array with matrices.
-            result[item_index] += A[item_index] + B[item_index];
+            result[item_index] = A[item_index] + B[item_index];
         }
     }
 }

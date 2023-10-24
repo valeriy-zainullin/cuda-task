@@ -9,7 +9,7 @@
 // Иногда достаточно первой главы Scan, когда мы просто посчитаем сумму по всему
 //   массиву. В нашем случае так, потому я дальше не сделал.
 // Если по вашему мнению, стоит реализовать, я сделаю!
-__global__
+__device__
 void DevDoScan1(float *array, int array_size) {
     // array_size должен быть степенью двойки.
 
@@ -69,11 +69,16 @@ void DevDoScan1(float *array, int array_size) {
     //__syncthreads();
 }
 
+__global__
+void DevScan1(float *array, int array_size) {
+    DevDoScan1(array, array_size);
+}
+
 // Вторая глава, где мы из сумм на отрезках длины 2^k получаем
 //   префиксные суммы (видимо, суффиксные суммы, т.к. у нас
 //   суммы отрезков хранятся в первых элементах, а не в последних,
 //   для тех отрезков, для которых хранятся).
-__global__
+__device__
 void DevDoScan2(float *array, int array_size) {
     // Здесь нам тоже нужно действовать по шагам.
     //   Изначально рассматриваются элементы предпоследнего шага.
@@ -118,4 +123,9 @@ void DevDoScan2(float *array, int array_size) {
     }
 
     // В итоге, у нас получается развернутая префиксная сумма. Суффиксная сумма.
+}
+
+__global__
+void DevScan2(float *array, int array_size) {
+    DevDoScan2(array, array_size);
 }

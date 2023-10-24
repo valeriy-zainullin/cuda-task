@@ -112,7 +112,7 @@ float ScalarMulSumPlusReduction(int num_items, float* vector1, float* vector2, i
 
     ScalarMulBlock<<<1, block_size>>>(num_items, dev_vector1, dev_vector2, dev_result);
 
-    DevDoScan1<<<1, block_size>>>(dev_result, result_len);
+    DevScan1<<<1, block_size>>>(dev_result, result_len);
 
     float sum = 0;
     cudaError_t status = cudaMemcpy(&sum, dev_result, sizeof(float), cudaMemcpyDeviceToHost);

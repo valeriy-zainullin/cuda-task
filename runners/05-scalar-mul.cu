@@ -143,7 +143,7 @@ int main() {
     }
     std::cout << "]\n";
 
-    DevDoScan1<<<num_blocks, num_threads_per_block>>>(dev_result, num_items);
+    DevScan1<<<num_blocks, num_threads_per_block>>>(dev_result, num_items);
 
     status = cudaMemcpy(result, dev_result, sizeof(result), cudaMemcpyDeviceToHost);
     if (status != cudaSuccess) {
@@ -161,7 +161,7 @@ int main() {
     }
     std::cout << "]\n";
 
-    DevDoScan2<<<num_blocks, num_threads_per_block>>>(dev_result, num_items);
+    DevScan2<<<num_blocks, num_threads_per_block>>>(dev_result, num_items);
 
     status = cudaMemcpy(result, dev_result, sizeof(result), cudaMemcpyDeviceToHost);
     if (status != cudaSuccess) {
