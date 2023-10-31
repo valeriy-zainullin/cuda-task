@@ -4,12 +4,12 @@
 
 #include <cstdio>
 
-__device__ static int dev_max(int a, int b) {
-    if (a > b) {
-        return a;
-    }
-    return b;
-}
+// __device__ static int dev_max(int a, int b) {
+//     if (a > b) {
+//        return a;
+//    }
+//    return b;
+// }
 
 // COPYPASTE from common kernels.
 //   Can't call __device__ functions from other
@@ -17,7 +17,7 @@ __device__ static int dev_max(int a, int b) {
 //   from me. And it's not even relevant..
 
 __device__
-void DevDoScan1(float *array, int array_size) {
+void DevDoIntScan1(int *array, int array_size) {
     int num_threads = blockDim.x;
     int thread_index = threadIdx.x;
 
@@ -33,25 +33,33 @@ void DevDoScan1(float *array, int array_size) {
 }
 
 __device__
-void DevDoScan2(float *array, int array_size) {
+void DevDoIntScan2(int *array, int array_size) {
     int num_threads = blockDim.x;
     int thread_index = threadIdx.x;
 
-    array[0] = 0.0f;
     for (int step_size = array_size; step_size >= 2; step_size /= 2) {
         int item_array_pos = thread_index * step_size;
-        for (int item = thread_index; item < array_size / step_size; item += num_threads) {
+        int next_item_array_pos = item_array_pos + step_size;
+        // Картинка помогает понять ситуацию (прямо моя реализация):
+        //   https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf,
+        //   страница 8.
+        // На самом верхнем уровне один элемент, у него уже правильное значение.
+        //   Хотим из дерева получить префиксные суммы.
+        //   На каждом уровне хранится только правый ребенок, левый
+        //   перезаписан значением родителя. Так что чинить нужно только
+        //   Правых детей. Правого ребенка, отрезок которого примыкакает к
+        //   концу массива, чинить не нужно. Если не примыкает, добавляем
+        //   соседа нашего уровня. Тогда получится префиксная сумма, т.к.
+        //   теперь отрезок учтенных элементов примыкает к концу массива.
+        for (int item = thread_index; item < array_size / step_size - 1; item += num_threads) {
             int prev_step_shift = step_size / 2;
-            int prev_left = item_array_pos;
+//            int prev_left = item_array_pos;
             int prev_right = item_array_pos + prev_step_shift;
 
-            int new_left_part  = array[prev_left] + array[prev_right];
-            int new_right_part = array[prev_left];
-
-            array[prev_left] = new_left_part;
-            array[prev_right] = new_right_part;
+            array[prev_right] += array[next_item_array_pos];
 
             item_array_pos += num_threads * step_size;
+            next_item_array_pos += num_threads * step_size;
         }
         __syncthreads();
     }
@@ -65,9 +73,12 @@ __global__ void Filter(
     OperationFilterType op_type,
     float* value,
     float* result,
-    float* aux_array1,
-    float* aux_array2
+    float* aux_array1_float,
+    float* aux_array2_float
 ) {
+    int* aux_array1 = (int*) aux_array1_float;
+    int* aux_array2 = (int*) aux_array2_float;
+
     uint3 thread_index_3d = threadIdx;
     int thread_index_in_block = thread_index_3d.x;
 
@@ -107,7 +118,7 @@ __global__ void Filter(
 
 //    __syncthreads();
 //    for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
-//        printf("item_index = %d, aux_array2[item_index] = %.0f, value[item_index] = %.0f.\n", item_index, aux_array2[item_index], value[item_index]);
+//        printf("item_index = %d, aux_array2[item_index] = %d, value = %.0f.\n", item_index, aux_array2[item_index], value[item_index]);
 //    }
 
     // Дожидаемся, пока все потоки завершат отсеивать элементы.
@@ -119,27 +130,20 @@ __global__ void Filter(
     //   элементу, потому все ок.
     // В нашем случае, сумма на суффиксах, т.е. знаем позицию с конца для всех,
     //   кроме последнего. Его проставляет первый поток.
-    DevDoScan1(aux_array1, num_items);
+    DevDoIntScan1(aux_array1, num_items);
     __syncthreads();
-    DevDoScan2(aux_array1, num_items);
+    DevDoIntScan2(aux_array1, num_items);
+
+//    __syncthreads();
+//    for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
+//        printf("item_index = %d, aux_array1[item_index] = %d, value = %.0f.\n", item_index, aux_array1[item_index], value[item_index]);
+//    }
 
     __syncthreads();
+
     for (int item_index = thread_index; item_index < num_items; item_index += num_threads) {
-        printf("item_index = %d, aux_array1[item_index] = %.0f.\n", item_index, aux_array1[item_index], value[item_index]);
-    }
-
-    __syncthreads();
-
-    if (thread_index == 0) {
-        int item_index = 0;
         if (aux_array2[item_index]) {
-            result[(int) (num_items - aux_array1[0] - 1)] = array[item_index];
-        }
-    }
-
-    for (int item_index = dev_max(thread_index, 1); item_index < num_items; item_index += num_threads) {
-        if (aux_array2[item_index]) {
-            result[(int) (num_items - aux_array1[item_index - 1])] = array[item_index];
+            result[aux_array1[0] - aux_array1[item_index]] = array[item_index];
         }
     }
 }
