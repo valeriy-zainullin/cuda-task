@@ -94,26 +94,29 @@ void DevDoScan2(float *array, int array_size) {
 
     // Картинка: https://youtu.be/jbmYuX_bxJY?si=PSk5zMdUffRKkNbo&t=1897
 
-    array[0] = 0.0f;
-    // Согласно картинке, для каждого элемента текущего шага смотрим,
-    //   из каких двух он получался. В меньший по индексу записываем
-    //   наше значение, а в больший записываем сумму меньшего и
-    //   текущего значения. У нас всё наоборот, в меньший пишем сумму.
     for (int step_size = array_size; step_size >= 2; step_size /= 2) {
         int item_array_pos = thread_index * step_size;
-        for (int item = thread_index; item < array_size / step_size; item += num_threads) {
+        int next_item_array_pos = item_array_pos + step_size;
+        // Картинка помогает понять ситуацию (прямо моя реализация):
+        //   https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf,
+        //   страница 8.
+        // На самом верхнем уровне один элемент, у него уже правильное значение.
+        //   Хотим из дерева получить префиксные суммы.
+        //   На каждом уровне хранится только правый ребенок, левый
+        //   перезаписан значением родителя. Так что чинить нужно только
+        //   Правых детей. Правого ребенка, отрезок которого примыкакает к
+        //   концу массива, чинить не нужно. Если не примыкает, добавляем
+        //   соседа нашего уровня. Тогда получится префиксная сумма, т.к.
+        //   теперь отрезок учтенных элементов примыкает к концу массива.
+        for (int item = thread_index; item < array_size / step_size - 1; item += num_threads) {
             int prev_step_shift = step_size / 2;
-            int prev_left = item_array_pos;
+//            int prev_left = item_array_pos;
             int prev_right = item_array_pos + prev_step_shift;
 
-            int new_left_part  = array[prev_left] + array[prev_right];
-            int new_right_part = array[prev_left];
+            array[prev_right] += array[next_item_array_pos];
 
-            array[prev_left] = new_left_part;
-            array[prev_right] = new_right_part;
-
-            // printf("array[%d] = %.0f, array[%d] = %.0f.\n", prev_left, array[prev_left], prev_right, array[prev_right]);
             item_array_pos += num_threads * step_size;
+            next_item_array_pos += num_threads * step_size;
         }
         // Дожидаемся, пока все потоки завершат этап.
         //   Без этого нельзя продолжать дальше, т.к.
