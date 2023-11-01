@@ -49,10 +49,9 @@ plot_target(05-scalar-mul)
 plot_target(06-cosine-vector)
 plot_target(07-matrix-mul)
 plot_target(08-filter)
-message("PLOT_TARGETS = ${PLOT_TARGETS}")
 add_custom_target(plot) #ALL)
 foreach(plot_target ${PLOT_TARGETS})
-	add_dependencies(plot "${plot_target}")
+	#add_dependencies(plot "${plot_target}")
 endforeach()
 
 
