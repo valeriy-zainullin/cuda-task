@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(CudaTasks LANGUAGES CUDA CXX)
 
-set(CMAKE_CXX_STANDARD 17) # std::is_trivially_copyable_v
+set(CMAKE_CXX_STANDARD 20) # std::is_trivially_copyable_v
 
 include_directories(include)
 
@@ -33,11 +33,12 @@ target_link_libraries(08-filter common_kernels)
 set(PLOT_TARGETS "")
 function(plot_target cuda_target)
 	add_custom_target(plot_${cuda_target}
-		COMMAND bash -c "'${CMAKE_OUTPUT_DIR}/${cuda_target}' > ${CMAKE_OUTPUT_DIR}/${cuda_target}_output.txt"
-		COMMAND python3 "${CMAKE_CURRENT_LIST_DIR}/plot.py" ${CMAKE_OUTPUT_DIR}/${cuda_target}_output.txt plots/${cuda_target}.png
+		COMMAND mkdir -p "${CMAKE_CURRENT_LIST_DIR}/plots"
+		COMMAND ${cuda_target} > "${CMAKE_CURRENT_BINARY_DIR}/${cuda_target}_output.txt"
+		COMMAND python3 "${CMAKE_CURRENT_LIST_DIR}/plot.py" "${CMAKE_CURRENT_BINARY_DIR}/${cuda_target}_output.txt" "${CMAKE_CURRENT_LIST_DIR}/plots/${cuda_target}.png"
 		DEPENDS ${cuda_target}
 	)
-	set(PLOT_TARGETS PARENT "${PLOT_TARGETS};plot_${cuda_target}")
+	set(PLOT_TARGETS "${PLOT_TARGETS};plot_${cuda_target}" PARENT_SCOPE)
 endfunction()
 
 plot_target(01-add)
@@ -48,10 +49,11 @@ plot_target(05-scalar-mul)
 plot_target(06-cosine-vector)
 plot_target(07-matrix-mul)
 plot_target(08-filter)
-add_custom_target(plot ALL DEPENDS ${PlOT_TARGETS})
+message("PLOT_TARGETS = ${PLOT_TARGETS}")
+add_custom_target(plot) #ALL)
+foreach(plot_target ${PLOT_TARGETS})
+	add_dependencies(plot "${plot_target}")
+endforeach()
 
 
 add_subdirectory(tests)
-
-
-
