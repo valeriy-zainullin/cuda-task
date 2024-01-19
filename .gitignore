@@ -1,0 +1,9 @@
+**cmake-build-debug**
+*.ipynb
+*.o
+**build**
+*.user
+.autotools
+.cproject
+.project
+.settings
